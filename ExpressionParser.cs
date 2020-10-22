@@ -42,22 +42,24 @@ namespace SprachePlayground
         private static readonly Parser<ExpressionType> Power = Operator("^", ExpressionType.Power);
 
         private static readonly Parser<Expression> Expr =
-            Parse.ChainOperator(Add.Or(Subtract), Term, Expression.MakeBinary);
+            Parse.ChainOperator(Parse.Ref(() => Add).Or(Parse.Ref(() => Subtract)),
+                Parse.Ref(() => Term), Expression.MakeBinary);
 
         private static readonly Parser<Expression> Term =
-            Parse.ChainOperator(Multiply.Or(Divide).Or(Modulo), InnerTerm, Expression.MakeBinary);
+            Parse.ChainOperator(Parse.Ref(() => Multiply).Or(Parse.Ref(() => Divide)).Or(Parse.Ref(() => Modulo)),
+                Parse.Ref(() => InnerTerm), Expression.MakeBinary);
 
         private static readonly Parser<Expression> InnerTerm =
-            Parse.ChainRightOperator(Power, Operand, Expression.MakeBinary);
+            Parse.ChainRightOperator(Parse.Ref(() => Power), Parse.Ref(() => Operand), Expression.MakeBinary);
 
         private static readonly Parser<Expression> Operand =
             (
                 (
                     from sign in Parse.Char('-')
-                    from factor in Factor
+                    from factor in Parse.Ref(() => Factor)
                     select Expression.Negate(factor)
                 )
-                .XOr(Factor)
+                .XOr(Parse.Ref(() => Factor))
             ).Token();
         
         private static readonly Parser<Expression> Factor =
@@ -67,8 +69,8 @@ namespace SprachePlayground
                 from rParenthesis in Parse.Char(')')
                 select expr
             ).Named("expression")
-            .XOr(Constant)
-            .XOr(Function);
+            .XOr(Parse.Ref(() => Constant))
+            .XOr(Parse.Ref(() => Function));
         
         private static readonly Parser<Expression> Constant =
             Parse.Decimal.Select(x => Expression.Constant(double.Parse(x))).Named("number");
@@ -76,11 +78,11 @@ namespace SprachePlayground
         private static readonly Parser<Expression> Function =
             from name in Parse.Letter.AtLeastOnce().Text()
             from lParenthesis in Parse.Char('(')
-            from expr in Parse.Ref(() => Expr).DelimitedBy(Parse.Char(',').Token())
+            from expr in Parse.Ref(() => Parse.Ref(() => Expr)).DelimitedBy(Parse.Char(',').Token())
             from rParenthesis in Parse.Char(')')
             select CallFunction(name, expr.ToArray());
 
         private static readonly Parser<Expression<Func<double>>> Lambda =
-            Expr.End().Select(body => Expression.Lambda<Func<double>>(body));
+            Parse.Ref(() => Expr).End().Select(body => Expression.Lambda<Func<double>>(body));
     }
 }
