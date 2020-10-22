@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace sprache_playground
+namespace SprachePlayground
 {
     class Program
     {
