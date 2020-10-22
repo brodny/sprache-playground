@@ -1,12 +1,29 @@
 ﻿using System;
+using System.Linq.Expressions;
 
 namespace SprachePlayground
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            string line;
+
+            do
+            {
+                Console.Write("Enter expression: ");
+                line = Console.ReadLine();
+
+                if (!string.IsNullOrEmpty(line))
+                {
+                    Expression<Func<double>> expression = ExpressionParser.ParseExpression(line);
+
+                    Func<double> func = expression.Compile();
+
+                    System.Console.WriteLine("Result: {0}", func());
+                }
+            }
+            while (!string.IsNullOrEmpty(line));
         }
     }
 }
